@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-Downsampling DiT: A DiT variant with spatial downsampling, processing, and upsampling stages.
+MPDiT: A DiT variant with spatial downsampling, processing, and upsampling stages.
 Architecture: PatchEmbed (reduces spatial resolution) -> DiT blocks -> Upsample -> DiT blocks
 """
 

@@ -28,16 +28,7 @@ Transformer architectures, particularly Diffusion Transformers (DiTs), have beco
 
 ## Installation
 
-Tested on Linux with Python 3.10 and CUDA GPUs.
-
-### Option A: Conda YAML
-
-```bash
-conda env create -f environment.yml
-conda activate DiT
-```
-
-### Option B: Setup Script
+Tested on Linux with CUDA GPUs.
 
 ```bash
 bash script/create_env.sh
