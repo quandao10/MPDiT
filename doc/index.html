@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MPDiT: Multi-Patch Global-to-Local Transformer Architecture</title>
+  <meta name="description" content="Project page for MPDiT: Multi-Patch Global-to-Local Transformer Architecture for Efficient Flow Matching and Diffusion Model." />
+  <meta property="og:title" content="MPDiT: Multi-Patch Global-to-Local Transformer Architecture" />
+  <meta property="og:description" content="A global-to-local multi-patch diffusion transformer that reduces GFLOPs while preserving generative quality." />
+  <meta property="og:image" content="assets/teaser_samples.jpg" />
+  <style>
+    :root {
+      --bg: #fbfbfd;
+      --paper: #ffffff;
+      --ink: #191a1f;
+      --muted: #626675;
+      --line: #e6e7ec;
+      --blue: #3b65d8;
+      --blue-2: #eef3ff;
+      --orange: #ff8a3d;
+      --shadow: 0 16px 44px rgba(23, 31, 56, 0.10);
+      --radius: 22px;
+      --max: 1100px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 8% 0%, #edf3ff 0, transparent 28rem), var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.58;
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(14px);
+      background: rgba(251, 251, 253, 0.84);
+      border-bottom: 1px solid rgba(230, 231, 236, 0.85);
+    }
+    .nav-inner {
+      max-width: var(--max);
+      margin: auto;
+      padding: 0.8rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .brand {
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+    }
+    .nav-links { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.95rem; }
+    .hero {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 4.8rem 1.25rem 2.2rem;
+      text-align: center;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.35rem 0.8rem;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.75);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      margin: 0 auto 1rem;
+      font-size: clamp(2.15rem, 5vw, 4.3rem);
+      line-height: 1.04;
+      max-width: 980px;
+      letter-spacing: -0.065em;
+    }
+    .acronym span {
+      display: inline-block;
+      color: var(--blue);
+    }
+    .subtitle {
+      margin: 0 auto;
+      max-width: 850px;
+      font-size: clamp(1.05rem, 2.1vw, 1.32rem);
+      color: var(--muted);
+    }
+    .authors, .affiliations, .notes {
+      margin-top: 1rem;
+      color: #363946;
+      font-size: 1.02rem;
+    }
+    .affiliations, .notes { color: var(--muted); font-size: 0.95rem; }
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 1.6rem;
+    }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      padding: 0.72rem 1rem;
+      border-radius: 999px;
+      color: #fff;
+      background: #1d1f2a;
+      font-weight: 700;
+      box-shadow: 0 7px 20px rgba(24, 27, 38, 0.12);
+    }
+    .button.secondary { background: var(--blue); }
+    .button.light { color: var(--ink); background: #fff; border: 1px solid var(--line); }
+    .container { max-width: var(--max); margin: auto; padding: 0 1.25rem; }
+    .card {
+      background: rgba(255,255,255,0.92);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    figure { margin: 0; }
+    figcaption { color: var(--muted); font-size: 0.95rem; padding: 0.9rem 1.1rem 1.1rem; }
+    .hero-figure img, .wide-figure img { width: 100%; display: block; }
+    .section { padding: 3.2rem 0 0; }
+    .section h2 {
+      margin: 0 0 0.75rem;
+      font-size: clamp(1.65rem, 3vw, 2.25rem);
+      letter-spacing: -0.04em;
+      line-height: 1.12;
+    }
+    .section p { color: var(--muted); margin-top: 0.25rem; }
+    .tldr {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding: 1.5rem;
+      background: linear-gradient(135deg, var(--blue-2), #fff);
+      border-radius: var(--radius);
+      border: 1px solid #dfe7ff;
+    }
+    .tldr strong { color: var(--blue); }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 1.15rem;
+    }
+    .mini {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 1.1rem;
+    }
+    .mini h3 { margin: 0 0 0.4rem; font-size: 1.05rem; }
+    .mini p { margin: 0; font-size: 0.95rem; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-top: 1.2rem;
+    }
+    .stat {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 1.15rem;
+      text-align: center;
+    }
+    .stat .num { display: block; font-size: 1.75rem; font-weight: 900; letter-spacing: -0.04em; color: var(--blue); }
+    .stat .label { display: block; color: var(--muted); font-size: 0.9rem; }
+    .video-wrap { background: #000; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+    video { display: block; width: 100%; height: auto; }
+    .table-wrap {
+      margin-top: 1rem;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow-x: auto;
+      box-shadow: 0 8px 24px rgba(23, 31, 56, 0.06);
+    }
+    table {
+      width: 100%;
+      min-width: 720px;
+      border-collapse: collapse;
+      font-size: 0.94rem;
+    }
+    caption {
+      caption-side: top;
+      text-align: left;
+      padding: 0.95rem 1rem;
+      color: #303442;
+      background: #f8f9fc;
+      border-bottom: 1px solid var(--line);
+    }
+    th, td { padding: 0.78rem 0.9rem; border-bottom: 1px solid #eff0f4; text-align: right; white-space: nowrap; }
+    th:first-child, td:first-child { text-align: left; }
+    th { color: #4c5160; font-weight: 800; background: #fbfbfd; }
+    tr.highlight td { background: #f1f6ff; font-weight: 800; color: #18233f; }
+    .samples-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .sample-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(23,31,56,0.06);
+    }
+    .sample-card img { width: 100%; height: 260px; object-fit: cover; object-position: top center; display: block; }
+    .sample-card p { margin: 0; padding: 0.7rem 0.8rem 0.85rem; font-size: 0.88rem; color: #555b69; }
+    pre {
+      overflow-x: auto;
+      background: #111525;
+      color: #e9eeff;
+      border-radius: 18px;
+      padding: 1.2rem;
+      border: 1px solid #252c44;
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+    footer {
+      margin-top: 4rem;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      text-align: center;
+      padding: 2rem 1.25rem 3rem;
+      font-size: 0.93rem;
+    }
+    @media (max-width: 850px) {
+      .grid-3, .stats { grid-template-columns: 1fr 1fr; }
+      .samples-grid { grid-template-columns: repeat(2, 1fr); }
+      .nav-inner { align-items: flex-start; flex-direction: column; }
+    }
+    @media (max-width: 560px) {
+      .grid-3, .stats, .samples-grid { grid-template-columns: 1fr; }
+      .sample-card img { height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="#top">MPDiT</a>
+      <div class="nav-links">
+        <a href="#highlight">Highlight</a>
+        <a href="#method">Method</a>
+        <a href="#results">Results</a>
+        <a href="#samples">Samples</a>
+        <a href="#bibtex">BibTeX</a>
+      </div>
+    </div>
+  </nav>
+
+  <header id="top" class="hero">
+    <div class="eyebrow">CVPR 2026 Project Page</div>
+    <h1><span class="acronym"><span>M</span>P<span>D</span>i<span>T</span></span>: Multi-Patch Global-to-Local Transformer Architecture</h1>
+    <p class="subtitle">Efficient flow matching and diffusion generation by spending cheap large-patch tokens early and high-resolution local tokens only near the end.</p>
+    <div class="authors">
+      <a href="https://quandao10.github.io/">Quan Dao</a><sup>1</sup> &nbsp;&nbsp; <a href="https://people.cs.rutgers.edu/~dnm/">Dimitris N. Metaxas</a><sup>1</sup>
+    </div>
+    <div class="affiliations"><sup>1</sup>Rutgers University</div>
+    <div class="buttons">
+      <a class="button" href="https://arxiv.org/abs/2603.26357">Paper</a>
+      <a class="button secondary" href="https://github.com/quandao10/MPDiT">Code</a>
+      <a class="button light" href="assets/slides.pdf">Slides</a>
+      <a class="button light" href="#talk">Talk Video</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <figure class="card hero-figure">
+      <img src="assets/teaser_samples.jpg" alt="Generated samples from MPDiT-XL" />
+      <figcaption><strong>Figure 1.</strong> Class-conditional ImageNet samples generated by MPDiT-XL.</figcaption>
+    </figure>
+
+    <section id="highlight" class="section">
+      <div class="tldr">
+        <h2>TL;DR</h2>
+        <p><strong>MPDiT</strong> is a global-to-local diffusion transformer. It runs most transformer blocks on coarse, large-patch tokens to capture global structure, then upsamples and uses only a few high-resolution blocks for local refinement. The design reduces GFLOPs by up to 50% while preserving strong generative quality.</p>
+      </div>
+      <div class="grid-3">
+        <article class="mini">
+          <h3>Global first</h3>
+          <p>Early blocks use patch size 4, reducing the latent token count from 256 to 64.</p>
+        </article>
+        <article class="mini">
+          <h3>Local refinement</h3>
+          <p>Only the final local blocks use patch size 2, recovering details at the end.</p>
+        </article>
+        <article class="mini">
+          <h3>Better conditioning</h3>
+          <p>Shared AdaIN, multi-token class conditioning, and FNO time embedding improve training convergence.</p>
+        </article>
+      </div>
+      <div class="stats">
+        <div class="stat"><span class="num">59.3</span><span class="label">GFLOPs for MPDiT-XL</span></div>
+        <div class="stat"><span class="num">7.36</span><span class="label">FID without CFG</span></div>
+        <div class="stat"><span class="num">2.05</span><span class="label">FID with CFG</span></div>
+        <div class="stat"><span class="num">49.9%</span><span class="label">GFLOPs vs dense XL</span></div>
+      </div>
+    </section>
+
+    <section id="method" class="section">
+      <h2>Method</h2>
+      <p>Instead of applying the same token resolution in every transformer block, MPDiT treats the network as a coarse-to-fine hierarchy. The first stage models global context with larger patches. An upsample module then expands the sequence and injects a fine patch embedding skip connection before final high-resolution refinement.</p>
+      <figure class="card wide-figure">
+        <img src="assets/method_overview.jpg" alt="MPDiT architecture overview" />
+        <figcaption><strong>Figure 2.</strong> MPDiT architecture overview: global-local multi-patch transformer, shared-conditioning DiT block, upsample module, and FNO time embedding.</figcaption>
+      </figure>
+    </section>
+
+    <section id="results" class="section">
+      <h2>Results</h2>
+      <p>MPDiT improves the quality-compute trade-off on ImageNet generation. The table below highlights representative ImageNet 256 results from the paper.</p>
+
+      <div class="table-wrap">
+        <table id="tab-imagenet256">
+          <caption><strong>Table 1.</strong> Quantitative performance on ImageNet 256. Lower FID and GFLOPs are better.</caption>
+          <thead>
+            <tr><th>Model</th><th>Epochs</th><th>GFLOPs</th><th>FID</th><th>sFID</th><th>IS</th><th>Precision</th><th>Recall</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>SiT-B/2</td><td>80</td><td>23.02</td><td>34.84</td><td>6.59</td><td>41.53</td><td>0.52</td><td>0.64</td></tr>
+            <tr><td>DiCo-B</td><td>80</td><td>16.88</td><td>27.20</td><td>-</td><td>56.52</td><td>0.60</td><td>0.61</td></tr>
+            <tr class="highlight"><td>MPDiT-B</td><td>80</td><td>16.60</td><td>24.74</td><td>6.32</td><td>57.40</td><td>0.58</td><td>0.65</td></tr>
+            <tr><td>SiT-XL/2</td><td>80</td><td>118.66</td><td>18.04</td><td>5.07</td><td>73.90</td><td>0.63</td><td>0.64</td></tr>
+            <tr><td>DiCo-XL</td><td>80</td><td>87.30</td><td>11.67</td><td>-</td><td>100.42</td><td>0.71</td><td>0.61</td></tr>
+            <tr class="highlight"><td>MPDiT-XL</td><td>80</td><td>59.30</td><td>9.92</td><td>5.05</td><td>102.79</td><td>0.70</td><td>0.64</td></tr>
+            <tr><td>DiG-XL/2-G</td><td>240</td><td>89.40</td><td>2.07</td><td>4.53</td><td>278.95</td><td>0.82</td><td>0.60</td></tr>
+            <tr class="highlight"><td>MPDiT-XL-G</td><td>240</td><td>59.30</td><td>2.05</td><td>4.51</td><td>278.73</td><td>0.82</td><td>0.61</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap">
+        <table id="tab-config">
+          <caption><strong>Table 2.</strong> Model configuration and computational cost.</caption>
+          <thead><tr><th>Model</th><th>N</th><th>k</th><th>Model Dim D</th><th>GFLOPs</th><th>GFLOPs ratio vs DiT</th></tr></thead>
+          <tbody>
+            <tr class="highlight"><td>MPDiT-B</td><td>12</td><td>6</td><td>768</td><td>16.6</td><td>72.1%</td></tr>
+            <tr class="highlight"><td>MPDiT-XL</td><td>28</td><td>6</td><td>1152</td><td>59.3</td><td>49.9%</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap">
+        <table id="tab-ablation">
+          <caption><strong>Table 3.</strong> Ablation on MPDiT components after 80 epochs.</caption>
+          <thead><tr><th>Method</th><th>Params (M)</th><th>GFLOPs</th><th>FID</th></tr></thead>
+          <tbody>
+            <tr><td>DiT-B/2</td><td>130.0</td><td>23.0</td><td>34.84</td></tr>
+            <tr><td>+ Shared AdaIN</td><td>90.3</td><td>22.9</td><td>35.31</td></tr>
+            <tr><td>+ Multi-token class embedding</td><td>101.9</td><td>24.3</td><td>28.56</td></tr>
+            <tr><td>+ FNO time embedding</td><td>101.2</td><td>24.3</td><td>24.52</td></tr>
+            <tr class="highlight"><td>+ MPDiT, k = 6</td><td>104.8</td><td>16.6</td><td>24.74</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap">
+        <table id="tab-k">
+          <caption><strong>Table 4.</strong> Ablation on the number of local high-resolution blocks k.</caption>
+          <thead><tr><th>Configuration</th><th>Method</th><th>Params (M)</th><th>GFLOPs</th><th>FID</th></tr></thead>
+          <tbody>
+            <tr><td>B</td><td>DiT-B/2 dagger</td><td>101.2</td><td>24.3</td><td>24.52</td></tr>
+            <tr><td>B</td><td>MPDiT k = 4</td><td>104.8</td><td>13.9</td><td>26.94</td></tr>
+            <tr class="highlight"><td>B</td><td>MPDiT k = 6</td><td>104.8</td><td>16.6</td><td>24.74</td></tr>
+            <tr><td>B</td><td>MPDiT k = 8</td><td>104.8</td><td>19.3</td><td>24.62</td></tr>
+            <tr><td>XL</td><td>DiT-XL/2 dagger</td><td>473.1</td><td>125.5</td><td>9.22</td></tr>
+            <tr><td>XL</td><td>MPDiT k = 4</td><td>481.2</td><td>53.2</td><td>11.11</td></tr>
+            <tr class="highlight"><td>XL</td><td>MPDiT k = 6</td><td>481.2</td><td>59.3</td><td>9.92</td></tr>
+            <tr><td>XL</td><td>MPDiT k = 8</td><td>481.2</td><td>65.4</td><td>9.73</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="samples" class="section">
+      <h2>Qualitative samples</h2>
+      <p>Additional ImageNet samples from the project assets.</p>
+      <figure class="card wide-figure">
+        <img src="assets/imagenet512_samples.jpg" alt="ImageNet 512 qualitative results" />
+        <figcaption><strong>Figure 3.</strong> ImageNet 512 qualitative samples generated by MPDiT.</figcaption>
+      </figure>
+      <div class="samples-grid">
+        <article class="sample-card"><img src="assets/class_113_samples.jpg" alt="Snail samples" /><p>Class 113 - snail</p></article>
+        <article class="sample-card"><img src="assets/class_33_samples.jpg" alt="Loggerhead turtle samples" /><p>Class 33 - loggerhead turtle</p></article>
+        <article class="sample-card"><img src="assets/class_84_samples.jpg" alt="Peacock samples" /><p>Class 84 - peacock</p></article>
+        <article class="sample-card"><img src="assets/class_37_samples.jpg" alt="Box turtle samples" /><p>Class 37 - box turtle</p></article>
+        <article class="sample-card"><img src="assets/class_88_samples.jpg" alt="Macaw samples" /><p>Class 88 - macaw</p></article>
+        <article class="sample-card"><img src="assets/class_207_samples.jpg" alt="Golden retriever samples" /><p>Class 207 - golden retriever</p></article>
+        <article class="sample-card"><img src="assets/class_417_samples.jpg" alt="Balloon samples" /><p>Class 417 - balloon</p></article>
+        <article class="sample-card"><img src="assets/class_947_samples.jpg" alt="Mushroom samples" /><p>Class 947 - mushroom</p></article>
+        <article class="sample-card"><img src="assets/class_980_samples.jpg" alt="Volcano samples" /><p>Class 980 - volcano</p></article>
+        <article class="sample-card"><img src="assets/class_971_samples.jpg" alt="Bubble samples" /><p>Class 971 - bubble</p></article>
+      </div>
+    </section>
+
+    <section id="talk" class="section">
+      <h2>Video talk</h2>
+      <p>A short presentation video is included with the page assets.</p>
+      <div class="video-wrap">
+        <video controls preload="metadata" poster="assets/teaser_samples.jpg">
+          <source src="assets/talk_video.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+      </div>
+    </section>
+
+    <section id="bibtex" class="section">
+      <h2>BibTeX</h2>
+      <pre><code>@inproceedings{dao2026mpdit,
+  title     = {MPDiT: Multi-Patch Global-to-Local Transformer Architecture For Efficient Flow Matching and Diffusion Model},
+  author    = {Dao, Quan and Metaxas, Dimitris N.},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  year      = {2026}
+}</code></pre>
+    </section>
+  </main>
+
+  <footer>
+    This website template is styled after modern academic project pages and is ready for GitHub Pages. Replace links or publication metadata as needed before release.
+  </footer>
+</body>
+</html>
