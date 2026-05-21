@@ -2,7 +2,7 @@
 
 [Quan Dao](https://quandao10.github.io/) · [Dimitris Metaxas](https://people.cs.rutgers.edu/~dnm/)
 
-[[Paper]](https://arxiv.org/abs/2603.26357v1)      [[Poster]](asset/MPDiT_postera.pdf) [[Page]](https://quandao10.github.io/MPDiT/) [[Slide]](docs/asset/slides.pdf) [[Video]](docs/asset/talk_video.mp4)
+[[Paper]](https://arxiv.org/abs/2603.26357v1)      [[Poster]](asset/MPDiT_poster.pdf) [[Page]](https://quandao10.github.io/MPDiT/) [[Slide]](docs/assets/slides.pdf) [[Video]](docs/assets/talk_video.mp4)
 
 ![MPDiT system overview](asset/system_figure.jpg)
 
