@@ -211,6 +211,17 @@ If you find this repository useful, please cite:
   year={2026}
 }
 ```
+or
+```bibtex
+@InProceedings{Dao_2026_CVPR,
+    author    = {Dao, Quan and Metaxas, Dimitris},
+    title     = {Multi-Patch Global-to-Local Transformer Architecture For Efficient Flow Matching and Diffusion Model},
+    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+    month     = {June},
+    year      = {2026},
+    pages     = {33000-33011}
+}
+```
 
 ## Contacts
 
